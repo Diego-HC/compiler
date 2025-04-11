@@ -28,6 +28,7 @@ pub enum Keyword {
     For,
     Fn,
     If,
+    Else,
 }
 
 /// Represents supported operators in the language
@@ -38,7 +39,12 @@ pub enum Operator {
     Minus,
     Multiply,
     Divide,
+    PlusEqual,
+    MinusEqual,
+    MultiplyEqual,
+    DivideEqual,
     Modulo,
+    Equal,
 
     // Comparison
     EqualEqual,
@@ -78,16 +84,22 @@ static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
     "for" => Keyword::For,
     "fn" => Keyword::Fn,
     "if" => Keyword::If,
+    "else" => Keyword::Else,
 };
 
 /// Mapping of operator strings to `Operator` enum values
 static OPERATORS: phf::Map<&'static str, Operator> = phf_map! {
     // Arithmetic
     "+" => Operator::Plus,
+    "+=" => Operator::PlusEqual,
     "-" => Operator::Minus,
+    "-=" => Operator::MinusEqual,
     "*" => Operator::Multiply,
+    "*=" => Operator::MultiplyEqual,
     "/" => Operator::Divide,
+    "/=" => Operator::DivideEqual,
     "%" => Operator::Modulo,
+    "=" => Operator::Equal,
 
     // Comparison
     "==" => Operator::EqualEqual,
@@ -134,7 +146,7 @@ lexer! {
     r"[ \n\t]+" => Token::Whitespace,
     r"-?[0-9]+\.[0-9]+" => Token::Decimal(tok.parse().unwrap()),
     r"-?[0-9]+" => Token::Integer(tok.parse().unwrap()),
-    r"==|!=|<=|>=|\&\&|\|\||[+\\\-*\/%<>!]" => {
+    r"\+=|-=|\*=|/=|==|!=|<=|>=|\&\&|\|\||[+\\\-*\/%<>!=]" => {
         if let Some(op) = parse_operator(tok) {
             Token::Operator(op)
         } else {
@@ -170,6 +182,14 @@ pub fn extract_tokens(input: String) -> Vec<Token> {
 
         tokens.push(token);
         remaining = new_remaining;
+    }
+
+    if !remaining.trim().is_empty() {
+        let position = input.len() - remaining.len();
+        panic!(
+            "Unrecognized token starting at position {}: {:?}",
+            position, remaining
+        );
     }
 
     tokens
