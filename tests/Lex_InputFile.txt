@@ -1,0 +1,3 @@
+ x 78 8.4 -55 size55 54 - RR if <= while x += *= /= -= !
+
+x hello print x = 5 + 3 if y == 5 x = 10 + 3 else x = 20 - 5
