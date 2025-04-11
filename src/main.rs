@@ -1,23 +1,30 @@
-//!
 //! # Lexical Analyzer
 //! #### Diego Eduardo Hernandez Cadena - A00834015
 //!  
-//! Implements a lexical analyzer using the plex crate. It reads the specified input file, tries to parse it, and prints a list of the resulting tokens.
+//! Implements a lexical analyzer using the `plex` crate. It reads the specified input file, tries to parse it, and prints a list of the resulting tokens.
+//!
+//! ## Usage
+//! To use the lexical analyzer, set the `INPUT_FILE_PATH` constant to the desired location and run `cargo run` to execute the program.
 //!
 //! ## Adding more keywords and operators
-//! To add a keyword or operator, it has to be added to the `Keyword` or `Operator` enum, and a mapping for it has to be included in the corresponding static map.
-//! Additionally, it may be needed to modify the corresponding regex inside the lexer.
+//! To add a keyword or operator:
+//! - Add it to the `Keyword` or `Operator` enum.
+//! - Add an entry to the corresponding `phf_map!` static map.
+//! - If necessary, update the regular expressions in the `lexer!` macro.
 //!
 //! ## Adding more tokens
-//! To add a new token, an entry has to be added to the `Token` enum, and a new rule has to be added to the `lexer!` macro.
+//! To add a new token:
+//! - Add a new variant to the `Token` enum.
+//! - Add a matching rule in the `lexer!` macro that maps input to the new token.
 
 use phf::phf_map;
 use plex::lexer;
 use std::{fs::File, io::Read};
 
-const INPUT_FILE_PATH: &str = "./input/Lex_InputFile.txt";
+/// Path to the input file to be analyzed
+const INPUT_FILE_PATH: &str = "Lex_InputFile.txt";
 
-/// Supported keywords that the lexer will parse
+/// Represents supported keywords that the lexer can recognize
 #[derive(Debug, Clone)]
 enum Keyword {
     While,
@@ -26,7 +33,7 @@ enum Keyword {
     If,
 }
 
-/// Supported operators that the lexer will parse
+/// Represents supported operators in the language
 #[derive(Debug, Clone)]
 enum Operator {
     // Arithmetic
@@ -50,19 +57,25 @@ enum Operator {
     Not,
 }
 
-/// Supported tokens that the lexer will parse
+/// Represents all possible tokens that can be produced by the lexer
 #[allow(dead_code)]
 #[derive(Debug)]
 enum Token {
+    /// Integer literals (e.g. `42`)
     Integer(i64),
+    /// Whitespace characters (e.g. space, tab, newline)
     Whitespace,
+    /// Identifiers (e.g. variable or function names)
     Identifier(String),
+    /// Floating point literals (e.g. `3.14`)
     Decimal(f64),
+    /// Language keywords (e.g. `while`, `if`)
     Keyword(Keyword),
+    /// Operators (e.g. `+`, `!=`)
     Operator(Operator),
 }
 
-/// List of supported keywords and operators
+/// Mapping of keyword strings to `Keyword` enum values
 static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
     "while" => Keyword::While,
     "for" => Keyword::For,
@@ -70,6 +83,7 @@ static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
     "if" => Keyword::If,
 };
 
+/// Mapping of operator strings to `Operator` enum values
 static OPERATORS: phf::Map<&'static str, Operator> = phf_map! {
     // Arithmetic
     "+" => Operator::Plus,
@@ -92,7 +106,10 @@ static OPERATORS: phf::Map<&'static str, Operator> = phf_map! {
     "!" => Operator::Not,
 };
 
-/// Reads the contents of the specified file
+/// Reads the contents of the file at the specified path
+///
+/// # Panics
+/// Panics if the file cannot be opened or read.
 fn extract_file_contents(file_name: &str) -> String {
     let mut file = File::open(file_name).expect("Failed to open file");
     let mut contents = String::new();
@@ -103,14 +120,17 @@ fn extract_file_contents(file_name: &str) -> String {
     contents
 }
 
+/// Tries to match a string slice to a known `Keyword`
 fn parse_keyword(s: &str) -> Option<Keyword> {
-    return KEYWORDS.get(s).cloned();
+    KEYWORDS.get(s).cloned()
 }
 
+/// Tries to match a string slice to a known `Operator`
 fn parse_operator(s: &str) -> Option<Operator> {
-    return OPERATORS.get(s).cloned();
+    OPERATORS.get(s).cloned()
 }
 
+// Lexer definition that converts input strings into tokens
 lexer! {
     fn take_token(tok: 'a) -> Token;
 
@@ -133,6 +153,10 @@ lexer! {
     }
 }
 
+/// Extracts all tokens from the input string using the lexer
+///
+/// # Panics
+/// Panics if two non-whitespace tokens are found without a valid separator between them.
 fn extract_tokens(input: String) -> Vec<Token> {
     let mut remaining = input.as_str();
     let mut tokens: Vec<Token> = Vec::new();
@@ -151,12 +175,12 @@ fn extract_tokens(input: String) -> Vec<Token> {
         remaining = new_remaining;
     }
 
-    return tokens;
+    tokens
 }
 
+/// Main function: reads input, tokenizes it, and prints each token (excluding whitespace)
 fn main() {
     let s = extract_file_contents(INPUT_FILE_PATH);
-
     let tokens = extract_tokens(s);
 
     for tok in tokens {
